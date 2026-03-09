@@ -3,8 +3,7 @@
 // ==========================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, where, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 // TWOJE ZAPAMIĘTANE KLUCZE FIREBASE
 const firebaseConfig = {
@@ -61,17 +60,28 @@ navItems.forEach(btn => {
     });
 });
 
-// --- LOGOWANIE (PRZEKIEROWANIE Z WYŁAPYWANIEM BŁĘDÓW) ---
+// --- LOGOWANIE (POP-UP Z WYMUSZENIEM PAMIĘCI) ---
 const loginBtn = document.getElementById('loginBtn');
 const mainLoginBtn = document.getElementById('mainLoginBtn');
 
-const signIn = async () => { 
-    try { 
-        await signInWithRedirect(auth, provider); 
-    } catch(e) { 
-        alert("Błąd inicjacji logowania: " + e.message); 
-    } 
+const signIn = () => { 
+    // Twarde wymuszenie zapisania sesji w pamięci przeglądarki
+    setPersistence(auth, browserLocalPersistence)
+        .then(() => {
+            // Zwykły Pop-up, bez opóźnień "await" - to omija blokady w telefonach!
+            return signInWithPopup(auth, provider);
+        })
+        .catch((error) => {
+            alert("Błąd logowania: " + error.message);
+        });
 };
+
+const logOut = async () => { try { await signOut(auth); } catch(e) { console.error(e); } };
+
+loginBtn.addEventListener('click', () => currentUser ? logOut() : signIn());
+mainLoginBtn.addEventListener('click', signIn);
+
+// Możesz usunąć cały blok getRedirectResult, nie będzie już potrzebny!
 
 const logOut = async () => { try { await signOut(auth); } catch(e) { console.error(e); } };
 
@@ -493,4 +503,5 @@ document.getElementById('closeScannerBtn').addEventListener('click', () => {
     scannerModal.classList.remove('active');
     if (html5QrcodeScanner) html5QrcodeScanner.clear();
 });
+
 
