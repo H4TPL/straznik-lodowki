@@ -1,4 +1,6 @@
-/* --- Zmienne i Reset --- */
+/* ==========================================
+   1. ZMIENNE GŁÓWNE I RESET
+   ========================================== */
 :root {
     --primary: #2e7d32;
     --primary-light: #60ad5e;
@@ -20,10 +22,13 @@
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-    padding-bottom: 80px; /* Więcej miejsca na nowe dolne menu */
+    /* Robimy dużo miejsca na dole, żeby menu nie zasłaniało treści na telefonach */
+    padding-bottom: 90px; 
 }
 
-/* --- Nawigacja górna --- */
+/* ==========================================
+   2. GÓRNA NAWIGACJA (NAVBAR)
+   ========================================== */
 .navbar {
     background-color: var(--primary);
     color: white;
@@ -45,12 +50,16 @@ body {
     gap: 8px;
 }
 
-/* --- Przyciski ogólne --- */
+/* ==========================================
+   3. PRZYCISKI (BUTTONS)
+   ========================================== */
 .btn {
-    padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;
-    font-weight: 500; background-color: white; color: var(--text-color);
-    display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
-    border: 1px solid var(--border-color);
+    padding: 10px 15px; 
+    border: none; border-radius: 5px; cursor: pointer;
+    font-weight: 500; font-size: 0.95rem;
+    background-color: white; color: var(--text-color);
+    display: flex; align-items: center; justify-content: center; gap: 8px; 
+    transition: 0.2s; border: 1px solid var(--border-color);
 }
 .btn:hover { background-color: #f0f0f0; }
 
@@ -60,7 +69,9 @@ body {
 .danger-btn { background-color: var(--danger); color: white; border: none; }
 .danger-btn:hover { background-color: #c0392b; }
 
-/* --- Układ ekranów --- */
+/* ==========================================
+   4. SYSTEM EKRANÓW (UKRYWANIE/POKAZYWANIE)
+   ========================================== */
 .app-container {
     max-width: 800px;
     margin: 20px auto;
@@ -83,7 +94,9 @@ body {
     margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);
 }
 
-/* --- Sekcje w lodówce i ustawieniach --- */
+/* ==========================================
+   5. POJEMNIKI I PRODUKTY W LODÓWCE
+   ========================================== */
 .storage-grid { display: grid; gap: 20px; }
 
 .storage-section {
@@ -99,7 +112,6 @@ body {
     display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;
 }
 
-/* --- Produkty i listy --- */
 .product-list { min-height: 40px; display: flex; flex-direction: column; gap: 10px; }
 
 .product-item {
@@ -111,23 +123,27 @@ body {
 .product-info strong { display: block; margin-bottom: 3px; }
 .product-info span { font-size: 0.85rem; color: #666; }
 
-/* Kolory statusów */
-.product-item.expiring-soon { border-left: 5px solid var(--warning); }
-.product-item.expired { border-left: 5px solid var(--danger); }
+/* Kolory terminów ważności */
 .product-item.safe { border-left: 5px solid var(--primary); }
+.product-item.expiring-soon { border-left: 5px solid var(--warning); }
+.product-item.expired { border-left: 5px solid var(--danger); background-color: #ffeaea; }
 
 .delete-btn {
     background: none; color: var(--danger); border: none; font-size: 1.2rem; cursor: pointer; padding: 5px;
 }
 
-/* --- Lista zakupów (nowość) --- */
-#shoppingList li {
+/* ==========================================
+   6. LISTA ZAKUPÓW I USTAWIENIA
+   ========================================== */
+#shoppingList li, #customSectionsList li, #familyMembersList li {
     background: var(--card-bg); padding: 12px; margin-bottom: 8px;
-    border-radius: 5px; display: flex; justify-content: space-between;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 5px; display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border-color);
 }
 
-/* --- Okienka Modal --- */
+/* ==========================================
+   7. OKIENKA WYSKAKUJĄCE (MODALE)
+   ========================================== */
 .modal-overlay {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;
@@ -137,6 +153,7 @@ body {
 .modal-box {
     background: var(--card-bg); padding: 25px; border-radius: 12px;
     width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
 
 .form-group { margin-bottom: 15px; }
@@ -146,12 +163,16 @@ body {
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-/* --- Kalendarz i Wykresy (Korekty) --- */
+/* ==========================================
+   8. KALENDARZ (Poprawki stylów)
+   ========================================== */
 #calendarDiv { min-height: 400px; }
 .fc-toolbar-title { font-size: 1.2em !important; }
-.fc-button { background-color: var(--primary) !important; border-color: var(--primary) !important; }
+.fc-button { background-color: var(--primary) !important; border-color: var(--primary) !important; text-transform: capitalize; }
 
-/* --- PRZEWIJANE DOLNE MENU DLA TELEFONÓW (Swipe) --- */
+/* ==========================================
+   9. DOLNE MENU MOBILNE (Przewijana Karuzela)
+   ========================================== */
 .bottom-nav {
     position: fixed; bottom: 0; left: 0; width: 100%;
     background-color: var(--card-bg);
@@ -160,31 +181,36 @@ body {
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
     z-index: 90;
     
-    /* Magia przewijania (Scroll) */
+    /* Płynne przewijanie poziome na telefonach */
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none; /* Ukrywa pasek w Firefox */
 }
-.bottom-nav::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+.bottom-nav::-webkit-scrollbar { display: none; /* Ukrywa pasek w Chrome/Safari */ }
 
 .nav-item {
     background: none; border: none; color: #888;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     font-size: 0.75rem; cursor: pointer;
-    min-width: 75px; /* Szerokość każdego przycisku, żeby się nie zgniotły */
+    min-width: 80px; /* Szerokość przycisku - kluczowe dla karuzeli */
     flex-shrink: 0;
     scroll-snap-align: start;
     padding: 5px;
+    transition: color 0.2s;
 }
 .nav-item i { font-size: 1.4rem; margin-bottom: 5px; }
 .nav-item.active { color: var(--primary); font-weight: 700; }
 
-/* --- RWD: Większe ekrany --- */
+/* ==========================================
+   10. WERSJA NA KOMPUTERY (RESPONSYWNOŚĆ)
+   ========================================== */
 @media (min-width: 768px) {
+    /* Na dużych ekranach ukrywamy dolne menu i pokazujemy wszystko w siatce */
     .bottom-nav { display: none; }
     body { padding-bottom: 0; }
     .storage-grid { grid-template-columns: repeat(2, 1fr); }
-    /* Menu u góry zamiast na dole dla komputerów */
-    .user-menu { gap: 20px; }
+    
+    /* Ekrany mogą być teraz obok siebie lub mieć inne menu (u nas polegamy na podziale z lewej) */
+    .dashboard-header { margin-top: 20px; }
 }
