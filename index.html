@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminator - Strażnik Lodówki</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo"><i class="fa-solid fa-snowflake"></i> Świeżo</div>
+        <div class="user-menu">
+            <button id="loginBtn" class="btn">Zaloguj</button>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <section id="welcomeScreen" class="screen active">
+            <div style="text-align: center; margin-top: 50px;">
+                <h1>Zapanuj nad swoją lodówką</h1>
+                <p style="margin-top: 15px; color: #666;">Śledź daty ważności, twórz własne sekcje i przestań wyrzucać jedzenie. Zaloguj się, aby rozpocząć!</p>
+            </div>
+        </section>
+
+        <section id="dashboardScreen" class="screen">
+            <div class="dashboard-header">
+                <h2>Moje zapasy</h2>
+                <button id="openModalBtn" class="btn primary-btn"><i class="fa-solid fa-plus"></i> Dodaj</button>
+            </div>
+            
+            <div id="storageSections" class="storage-grid"></div>
+        </section>
+    </main>
+
+    <!-- Modal do dodawania -->
+    <div id="addProductModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3><i class="fa-solid fa-apple-whole"></i> Dodaj produkt</h3>
+            
+            <div class="form-group">
+                <label for="productName">Nazwa produktu</label>
+                <input type="text" id="productName" placeholder="np. Mleko 3.2%, Ser żółty">
+            </div>
+            
+            <div class="form-group">
+                <label for="expiryDate">Data ważności</label>
+                <input type="date" id="expiryDate">
+            </div>
+            
+            <div class="form-group">
+                <label for="storageLocation">Gdzie to kładziesz?</label>
+                <select id="storageLocation">
+                </select>
+            </div>
+            
+            <div class="modal-actions">
+                <button id="closeModalBtn" class="btn">Anuluj</button>
+                <button id="saveProductBtn" class="btn primary-btn">Zapisz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dolne menu dla telefonów -->
+    <nav class="bottom-nav">
+        <button class="nav-item active"><i class="fa-solid fa-house"></i><span>Główna</span></button>
+        <button class="nav-item"><i class="fa-solid fa-barcode"></i><span>Skanuj</span></button>
+        <button class="nav-item"><i class="fa-regular fa-calendar"></i><span>Kalendarz</span></button>
+    </nav>
+
+    <!-- Ważne: type="module" -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
