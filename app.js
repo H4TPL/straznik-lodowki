@@ -7,12 +7,13 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChang
 
 // !!! TUTAJ WKLEJ SWOJE KLUCZE FIREBASE !!!
 const firebaseConfig = {
-    apiKey: "TWOJ_KLUCZ",
-    authDomain: "straznik-lodowki.firebaseapp.com",
-    projectId: "straznik-lodowki",
-    storageBucket: "straznik-lodowki.firebasestorage.app",
-    messagingSenderId: "TWOJE_ID",
-    appId: "TWOJE_APP_ID"
+const firebaseConfig = {
+  apiKey: "AIzaSyCZQCabpk9z3ErO1PvWK1s1t2bgYLsaU4Q",
+  authDomain: "straznik-lodowki.firebaseapp.com",
+  projectId: "straznik-lodowki",
+  storageBucket: "straznik-lodowki.firebasestorage.app",
+  messagingSenderId: "164272438750",
+  appId: "1:164272438750:web:e70732b4e4db6de056714f"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -399,3 +400,4 @@ document.getElementById('closeScannerBtn').addEventListener('click', () => {
 window.deleteDoc = deleteDoc;
 window.doc = doc;
 window.db = db;
+
