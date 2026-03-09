@@ -3,68 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Strażnik Lodówki</title>
+    <title>Strażnik Lodówki - Wersja PRO</title>
     
+    <!-- Nasz CSS -->
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Czcionki i Ikony -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Zewnętrzne potężne biblioteki (Skaner, Kalendarz, Wykresy) -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
+    <!-- GÓRNY PASEK NAWIGACJI -->
     <header class="navbar">
-        <div class="logo"><i class="fa-solid fa-snowflake"></i> Świeżo</div>
-        <div class="user-menu" style="display: flex; align-items: center; gap: 10px;">
+        <div class="logo"><i class="fa-solid fa-snowflake"></i> Świeżo PRO</div>
+        <div class="user-menu" style="display: flex; align-items: center; gap: 15px;">
+            <!-- Dzwoneczek powiadomień -->
+            <i class="fa-regular fa-bell" id="notificationBtn" style="font-size: 1.2rem; cursor: pointer; display: none;"></i>
             <span id="userEmailDisplay" style="display:none; font-size: 0.85rem; opacity: 0.9;"></span>
             <button id="loginBtn" class="btn"><i class="fa-brands fa-google"></i> Zaloguj</button>
         </div>
     </header>
 
+    <!-- GŁÓWNA ZAWARTOŚĆ -->
     <main class="app-container">
         
-        <!-- EKRAN POWITALNY -->
+        <!-- 1. EKRAN LOGOWANIA -->
         <section id="welcomeScreen" class="screen active">
             <div style="text-align: center; margin-top: 60px;">
                 <i class="fa-solid fa-basket-shopping" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;"></i>
                 <h1>Zapanuj nad swoją lodówką</h1>
                 <p style="margin-top: 15px; margin-bottom: 30px; color: #666; font-size: 1.1rem;">
-                    Śledź daty ważności, przestań wyrzucać jedzenie i oszczędzaj pieniądze.
+                    Śledź daty, twórz listy zakupów, udostępniaj lodówkę rodzinie i gotuj z resztek.
                 </p>
                 <button id="mainLoginBtn" class="btn primary-btn" style="margin: 0 auto; font-size: 1.2rem; padding: 15px 30px;">
-                    <i class="fa-brands fa-google"></i> Zaloguj się przez Google
+                    <i class="fa-brands fa-google"></i> Wejdź przez Google
                 </button>
             </div>
         </section>
 
-        <!-- GŁÓWNY PULPIT (po zalogowaniu) -->
+        <!-- 2. GŁÓWNA LODÓWKA (Dashboard) -->
         <section id="dashboardScreen" class="screen">
             <div class="dashboard-header">
                 <h2>Moje zapasy</h2>
                 <button id="openModalBtn" class="btn primary-btn"><i class="fa-solid fa-plus"></i> Dodaj</button>
             </div>
+            
+            <!-- Sugestia przepisów (Gdy kończą się produkty) -->
+            <div id="recipeSuggestionAlert" style="display: none; background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--primary);">
+                <strong><i class="fa-solid fa-utensils"></i> Pomysł na obiad!</strong>
+                <p style="font-size: 0.9rem; margin-top: 5px;">Masz kończące się jajka i pomidory. Zrób szakszukę!</p>
+            </div>
+
             <div id="storageSections" class="storage-grid"></div>
         </section>
+
+        <!-- 3. EKRAN LISTY ZAKUPÓW -->
+        <section id="shoppingListScreen" class="screen">
+            <div class="dashboard-header">
+                <h2>Lista zakupów</h2>
+                <button id="addShoppingItemBtn" class="btn"><i class="fa-solid fa-cart-plus"></i> Dodaj wpis</button>
+            </div>
+            <ul id="shoppingList" style="list-style: none; padding: 0;">
+                <!-- Tu JS wygeneruje braki -->
+            </ul>
+        </section>
+
+        <!-- 4. EKRAN KALENDARZA -->
+        <section id="calendarScreen" class="screen">
+            <div class="dashboard-header">
+                <h2>Kalendarz Ważności</h2>
+            </div>
+            <!-- Tu odpali się potężny kalendarz -->
+            <div id="calendarDiv" style="background: white; padding: 10px; border-radius: 8px;"></div>
+        </section>
+
+        <!-- 5. EKRAN STATYSTYK ZERO WASTE -->
+        <section id="statsScreen" class="screen">
+            <div class="dashboard-header">
+                <h2>Twoje statystyki</h2>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                <h3>W tym miesiącu:</h3>
+                <div style="display: flex; justify-content: space-around; margin: 20px 0;">
+                    <div><h2 style="color: var(--primary);" id="savedCount">0</h2><p>Uratowane</p></div>
+                    <div><h2 style="color: var(--danger);" id="wastedCount">0</h2><p>Wyrzucone</p></div>
+                </div>
+                <!-- Miejsce na wykres kołowy -->
+                <canvas id="zeroWasteChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+
+        <!-- 6. EKRAN USTAWIEŃ I RODZINY -->
+        <section id="settingsScreen" class="screen">
+            <div class="dashboard-header">
+                <h2>Ustawienia</h2>
+            </div>
+            <div class="storage-section" style="margin-bottom: 20px;">
+                <h3><i class="fa-solid fa-users"></i> Domownicy (Współdzielenie)</h3>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Zaproś innych do zarządzania tą lodówką.</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="email" id="inviteEmail" placeholder="Email domownika" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <button class="btn primary-btn" id="inviteBtn">Zaproś</button>
+                </div>
+                <ul id="familyList" style="margin-top: 10px; font-size: 0.9rem;"></ul>
+            </div>
+
+            <div class="storage-section">
+                <h3><i class="fa-solid fa-box"></i> Twoje pojemniki</h3>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Zarządzaj własnymi sekcjami w lodówce.</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="newSectionName" placeholder="Nazwa (np. Zamrażarka)" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <button class="btn primary-btn" id="addSectionBtn">Dodaj sekcję</button>
+                </div>
+                <ul id="customSectionsList" style="margin-top: 10px; font-size: 0.9rem;"></ul>
+            </div>
+        </section>
+
     </main>
 
-    <!-- OKIENKO DODAWANIA PRODUKTU -->
+    <!-- OKIENKA MODALNE (Wyskakujące pop-upy) -->
+    
+    <!-- Dodawanie Produktu -->
     <div id="addProductModal" class="modal-overlay">
         <div class="modal-box">
             <h3><i class="fa-solid fa-apple-whole"></i> Dodaj produkt</h3>
-            
             <div class="form-group">
-                <label for="productName">Nazwa produktu</label>
-                <input type="text" id="productName" placeholder="np. Mleko 3.2%">
+                <label>Nazwa produktu</label>
+                <input type="text" id="productName" placeholder="np. Mleko">
             </div>
-            
             <div class="form-group">
-                <label for="expiryDate">Data ważności</label>
+                <label>Data ważności</label>
                 <input type="date" id="expiryDate">
             </div>
-            
             <div class="form-group">
-                <label for="storageLocation">Gdzie to kładziesz?</label>
+                <label>Pojemnik</label>
                 <select id="storageLocation"></select>
             </div>
-            
             <div class="modal-actions">
                 <button id="closeModalBtn" class="btn">Anuluj</button>
                 <button id="saveProductBtn" class="btn primary-btn">Zapisz</button>
@@ -72,14 +152,39 @@
         </div>
     </div>
 
-    <!-- DOLNE MENU (Mobile) -->
+    <!-- Skaner -->
+    <div id="scannerModal" class="modal-overlay">
+        <div class="modal-box" style="text-align: center;">
+            <h3><i class="fa-solid fa-barcode"></i> Zeskanuj kod</h3>
+            <div id="reader" style="width: 100%; min-height: 250px; margin-top: 15px; border-radius: 8px; overflow: hidden; background: #000;"></div>
+            <div class="modal-actions" style="justify-content: center; margin-top: 20px;">
+                <button id="closeScannerBtn" class="btn danger-btn"><i class="fa-solid fa-xmark"></i> Zamknij aparat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pytanie "Co się stało z produktem?" przy usuwaniu (Do statystyk) -->
+    <div id="consumeModal" class="modal-overlay">
+        <div class="modal-box" style="text-align: center;">
+            <h3>Usuwasz produkt</h3>
+            <p>Co się z nim stało?</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <button class="btn primary-btn" id="btnConsumed"><i class="fa-solid fa-utensils"></i> Zjedzony (Uratowany)</button>
+                <button class="btn danger-btn" id="btnWasted"><i class="fa-solid fa-trash-can"></i> Zepsuty (Wyrzucony)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOWE DOLNE MENU (6 przycisków! Będzie trzeba je ostylować) -->
     <nav class="bottom-nav">
-        <button class="nav-item active"><i class="fa-solid fa-house"></i><span>Główna</span></button>
-        <button class="nav-item"><i class="fa-solid fa-barcode"></i><span>Skanuj</span></button>
-        <button class="nav-item"><i class="fa-regular fa-calendar"></i><span>Kalendarz</span></button>
+        <button class="nav-item active" data-target="dashboardScreen"><i class="fa-solid fa-house"></i><span>Lodówka</span></button>
+        <button class="nav-item" id="scanNavBtn"><i class="fa-solid fa-barcode"></i><span>Skanuj</span></button>
+        <button class="nav-item" data-target="shoppingListScreen"><i class="fa-solid fa-cart-shopping"></i><span>Zakupy</span></button>
+        <button class="nav-item" data-target="calendarScreen"><i class="fa-regular fa-calendar"></i><span>Kalendarz</span></button>
+        <button class="nav-item" data-target="statsScreen"><i class="fa-solid fa-chart-pie"></i><span>Statystyki</span></button>
+        <button class="nav-item" data-target="settingsScreen"><i class="fa-solid fa-gear"></i><span>Ustawienia</span></button>
     </nav>
 
-    <!-- WAŻNE: type="module" -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
