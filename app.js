@@ -1,5 +1,5 @@
 // ==========================================
-// CZĘŚĆ 1: BAZA, LOGOWANIE I USTAWIENIA
+// CZĘŚĆ 1: BAZA, LOGOWANIE I USTAWIENIA (Wersja naprawiona dla mobile)
 // ==========================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -21,6 +21,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
+// Wymuszenie wyboru konta przy każdym kliknięciu (czyści zablokowane sesje na telefonie)
+provider.setCustomParameters({
+    prompt: 'select_account'
+});
+
 // --- ZMIENNE GLOBALNE ---
 let currentUser = null;
 let currentHouseholdId = null; 
@@ -29,7 +34,6 @@ let unsubscribeSections = null;
 let productsArray = []; 
 let chartInstance = null; 
 
-// Domyślne sekcje (można dodawać własne!)
 let storageSections = [
     { id: 'fridge-top', name: 'Lodówka - Góra', icon: 'fa-temperature-low' },
     { id: 'fridge-mid', name: 'Lodówka - Środek', icon: 'fa-snowflake' },
@@ -52,36 +56,49 @@ navItems.forEach(btn => {
         screens.forEach(screen => screen.classList.remove('active'));
         document.getElementById(target).classList.add('active');
 
-        // Wywołania odświeżenia widoków z Części 2
         if(target === 'calendarScreen' && typeof renderCalendar === 'function') renderCalendar();
         if(target === 'statsScreen' && typeof renderStats === 'function') renderStats();
     });
 });
 
-// --- LOGOWANIE (PRZEKIEROWANIE) ---
+// --- LOGOWANIE (PRZEKIEROWANIE Z WYŁAPYWANIEM BŁĘDÓW) ---
 const loginBtn = document.getElementById('loginBtn');
 const mainLoginBtn = document.getElementById('mainLoginBtn');
 
-const signIn = async () => { try { await signInWithRedirect(auth, provider); } catch(e) { console.error(e); } };
+const signIn = async () => { 
+    try { 
+        await signInWithRedirect(auth, provider); 
+    } catch(e) { 
+        alert("Błąd inicjacji logowania: " + e.message); 
+    } 
+};
+
 const logOut = async () => { try { await signOut(auth); } catch(e) { console.error(e); } };
 
 loginBtn.addEventListener('click', () => currentUser ? logOut() : signIn());
 mainLoginBtn.addEventListener('click', signIn);
 
-getRedirectResult(auth).catch(err => console.error("Błąd logowania:", err));
+// TO JEST KLUCZOWE: Odbieranie wyniku z Google po powrocie na stronę
+getRedirectResult(auth).then((result) => {
+    if (result) {
+        console.log("Logowanie udane po powrocie!");
+    }
+}).catch((error) => {
+    // Jeśli przeglądarka coś zablokuje, pokaże Ci się ten komunikat!
+    alert("Błąd powrotu z Google: " + error.message);
+});
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         
-        // Sprawdzamy, czy masz już przypisany dom, jeśli nie - tworzymy nowy z Twoim UID
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists() && userDocSnap.data().householdId) {
             currentHouseholdId = userDocSnap.data().householdId;
         } else {
-            currentHouseholdId = user.uid; // Domyślnie sam dla siebie
+            currentHouseholdId = user.uid; 
             await setDoc(userDocRef, { email: user.email, householdId: currentHouseholdId });
         }
         
@@ -91,7 +108,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('userEmailDisplay').style.display = 'inline';
         document.getElementById('userEmailDisplay').innerText = user.email;
 
-        initApp(); // Odpala funkcje z Części 2
+        if (typeof initApp === 'function') initApp(); 
     } else {
         currentUser = null;
         currentHouseholdId = null;
@@ -122,13 +139,12 @@ document.getElementById('addSectionBtn').addEventListener('click', async () => {
     } catch (e) { console.error(e); }
 });
 
-function loadCustomSections() {
+window.loadCustomSections = function() {
     const q = query(collection(db, "customSections"), where("householdId", "==", currentHouseholdId));
     unsubscribeSections = onSnapshot(q, (snapshot) => {
         const customList = document.getElementById('customSectionsList');
         if(customList) customList.innerHTML = '';
         
-        // Reset do podstawowych
         storageSections = [
             { id: 'fridge-top', name: 'Lodówka - Góra', icon: 'fa-temperature-low' },
             { id: 'fridge-mid', name: 'Lodówka - Środek', icon: 'fa-snowflake' },
@@ -138,7 +154,7 @@ function loadCustomSections() {
 
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
-            storageSections.push(data); // Dodanie do opcji
+            storageSections.push(data); 
             
             if(customList) {
                 const li = document.createElement('li');
@@ -148,7 +164,7 @@ function loadCustomSections() {
             }
         });
         
-        renderEmptySections(); // Przebudowanie lodówki z nowymi sekcjami
+        if (typeof renderEmptySections === 'function') renderEmptySections(); 
     });
 }
 
@@ -162,11 +178,12 @@ document.getElementById('inviteBtn').addEventListener('click', async () => {
     if(!email) return alert("Podaj adres e-mail!");
     
     try {
-        // Zapisujemy "zaproszenie" w bazie, żeby druga osoba mogła je odebrać (uproszczona logika dla Ciebie)
         alert(`Zaproszenie wysłane do ${email}! Twój ID Domu to: ${currentHouseholdId}. Zaproszony musi skontaktować się z administratorem bazy.`);
         document.getElementById('inviteEmailInput').value = '';
     } catch(e) { console.error(e); }
 });
+
+// TUTAJ ZACZYNA SIĘ CZĘŚĆ 2 (Zostaw ją bez zmian!)
 // ==========================================
 // CZĘŚĆ 2: GŁÓWNA LOGIKA APLIKACJI
 // ==========================================
@@ -476,3 +493,4 @@ document.getElementById('closeScannerBtn').addEventListener('click', () => {
     scannerModal.classList.remove('active');
     if (html5QrcodeScanner) html5QrcodeScanner.clear();
 });
+
