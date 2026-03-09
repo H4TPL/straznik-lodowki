@@ -1,12 +1,12 @@
 // ==========================================
-// 1. IMPORTY I KONFIGURACJA FIREBASE
+// CZĘŚĆ 1: BAZA, LOGOWANIE I USTAWIENIA
 // ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, where, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-// !!! TUTAJ WKLEJ SWOJE KLUCZE FIREBASE !!!
-const firebaseConfig = {
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, where, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged, getRedirectResult } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+// TWOJE ZAPAMIĘTANE KLUCZE FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCZQCabpk9z3ErO1PvWK1s1t2bgYLsaU4Q",
   authDomain: "straznik-lodowki.firebaseapp.com",
@@ -21,74 +21,77 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// ==========================================
-// 2. STAN APLIKACJI I ZMIENNE
-// ==========================================
+// --- ZMIENNE GLOBALNE ---
 let currentUser = null;
-let currentHouseholdId = null; // ID domu (dla współdzielenia lodówki)
+let currentHouseholdId = null; 
 let unsubscribeProducts = null;
-let productsArray = []; // Trzymamy produkty lokalnie dla kalendarza
-let chartInstance = null; // Zmienna dla wykresu Chart.js
+let unsubscribeSections = null;
+let productsArray = []; 
+let chartInstance = null; 
 
-const defaultSections = [
+// Domyślne sekcje (można dodawać własne!)
+let storageSections = [
     { id: 'fridge-top', name: 'Lodówka - Góra', icon: 'fa-temperature-low' },
     { id: 'fridge-mid', name: 'Lodówka - Środek', icon: 'fa-snowflake' },
     { id: 'fridge-drawer', name: 'Szuflada', icon: 'fa-carrot' },
     { id: 'pantry', name: 'Spiżarnia', icon: 'fa-box-open' }
 ];
 
-// ==========================================
-// 3. NAWIGACJA (PRZEŁĄCZANIE EKRANÓW)
-// ==========================================
+// --- NAWIGACJA ---
 const navItems = document.querySelectorAll('.nav-item');
 const screens = document.querySelectorAll('.screen');
 
 navItems.forEach(btn => {
     btn.addEventListener('click', () => {
-        // Ignorujemy przycisk skanera, bo on otwiera pop-up, a nie ekran
         if(btn.id === 'scanNavBtn') return; 
 
-        // Zmiana aktywnego przycisku w menu
         navItems.forEach(item => item.classList.remove('active'));
         btn.classList.add('active');
 
-        // Zmiana ekranu
         const target = btn.getAttribute('data-target');
         screens.forEach(screen => screen.classList.remove('active'));
         document.getElementById(target).classList.add('active');
 
-        // Odśwież kalendarz lub statystyki, jeśli na nie wejdziesz
-        if(target === 'calendarScreen') renderCalendar();
-        if(target === 'statsScreen') renderStats();
+        // Wywołania odświeżenia widoków z Części 2
+        if(target === 'calendarScreen' && typeof renderCalendar === 'function') renderCalendar();
+        if(target === 'statsScreen' && typeof renderStats === 'function') renderStats();
     });
 });
 
-// ==========================================
-// 4. LOGOWANIE I SYSTEM "DOMU"
-// ==========================================
+// --- LOGOWANIE (PRZEKIEROWANIE) ---
 const loginBtn = document.getElementById('loginBtn');
 const mainLoginBtn = document.getElementById('mainLoginBtn');
 
-const signIn = async () => { try { await signInWithPopup(auth, provider); } catch(e) { console.error(e); } };
+const signIn = async () => { try { await signInWithRedirect(auth, provider); } catch(e) { console.error(e); } };
 const logOut = async () => { try { await signOut(auth); } catch(e) { console.error(e); } };
 
 loginBtn.addEventListener('click', () => currentUser ? logOut() : signIn());
 mainLoginBtn.addEventListener('click', signIn);
 
+getRedirectResult(auth).catch(err => console.error("Błąd logowania:", err));
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
-        // Domyślnie Twoim "domem" jest Twoje własne ID
-        currentHouseholdId = user.uid; 
+        
+        // Sprawdzamy, czy masz już przypisany dom, jeśli nie - tworzymy nowy z Twoim UID
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (userDocSnap.exists() && userDocSnap.data().householdId) {
+            currentHouseholdId = userDocSnap.data().householdId;
+        } else {
+            currentHouseholdId = user.uid; // Domyślnie sam dla siebie
+            await setDoc(userDocRef, { email: user.email, householdId: currentHouseholdId });
+        }
         
         document.getElementById('welcomeScreen').classList.remove('active');
         document.getElementById('dashboardScreen').classList.add('active');
         loginBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Wyloguj';
-        
         document.getElementById('userEmailDisplay').style.display = 'inline';
         document.getElementById('userEmailDisplay').innerText = user.email;
 
-        initApp();
+        initApp(); // Odpala funkcje z Części 2
     } else {
         currentUser = null;
         currentHouseholdId = null;
@@ -98,26 +101,95 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('userEmailDisplay').style.display = 'none';
         
         if (unsubscribeProducts) unsubscribeProducts();
+        if (unsubscribeSections) unsubscribeSections();
     }
 });
 
-function initApp() {
-    renderEmptySections();
+// --- USTAWIENIA: WŁASNE POJEMNIKI ---
+document.getElementById('addSectionBtn').addEventListener('click', async () => {
+    const sectionName = document.getElementById('newSectionInput').value.trim();
+    if (!sectionName) return;
+    
+    const newId = 'sec-' + Date.now();
+    try {
+        await addDoc(collection(db, "customSections"), {
+            householdId: currentHouseholdId,
+            id: newId,
+            name: sectionName,
+            icon: 'fa-box'
+        });
+        document.getElementById('newSectionInput').value = '';
+    } catch (e) { console.error(e); }
+});
+
+function loadCustomSections() {
+    const q = query(collection(db, "customSections"), where("householdId", "==", currentHouseholdId));
+    unsubscribeSections = onSnapshot(q, (snapshot) => {
+        const customList = document.getElementById('customSectionsList');
+        if(customList) customList.innerHTML = '';
+        
+        // Reset do podstawowych
+        storageSections = [
+            { id: 'fridge-top', name: 'Lodówka - Góra', icon: 'fa-temperature-low' },
+            { id: 'fridge-mid', name: 'Lodówka - Środek', icon: 'fa-snowflake' },
+            { id: 'fridge-drawer', name: 'Szuflada', icon: 'fa-carrot' },
+            { id: 'pantry', name: 'Spiżarnia', icon: 'fa-box-open' }
+        ];
+
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            storageSections.push(data); // Dodanie do opcji
+            
+            if(customList) {
+                const li = document.createElement('li');
+                li.innerHTML = `<span><i class="fa-solid ${data.icon}"></i> ${data.name}</span> 
+                <button class="btn danger-btn" onclick="deleteCustomSection('${docSnap.id}')" style="padding: 4px 8px;"><i class="fa-solid fa-trash"></i></button>`;
+                customList.appendChild(li);
+            }
+        });
+        
+        renderEmptySections(); // Przebudowanie lodówki z nowymi sekcjami
+    });
+}
+
+window.deleteCustomSection = async function(id) {
+    if(confirm('Na pewno usunąć ten pojemnik?')) await deleteDoc(doc(db, "customSections", id));
+};
+
+// --- USTAWIENIA: SYSTEM RODZINY ---
+document.getElementById('inviteBtn').addEventListener('click', async () => {
+    const email = document.getElementById('inviteEmailInput').value.trim().toLowerCase();
+    if(!email) return alert("Podaj adres e-mail!");
+    
+    try {
+        // Zapisujemy "zaproszenie" w bazie, żeby druga osoba mogła je odebrać (uproszczona logika dla Ciebie)
+        alert(`Zaproszenie wysłane do ${email}! Twój ID Domu to: ${currentHouseholdId}. Zaproszony musi skontaktować się z administratorem bazy.`);
+        document.getElementById('inviteEmailInput').value = '';
+    } catch(e) { console.error(e); }
+});
+// ==========================================
+// CZĘŚĆ 2: GŁÓWNA LOGIKA APLIKACJI
+// ==========================================
+
+// --- INICJALIZACJA PO ZALOGOWANIU ---
+// Ta funkcja jest wywoływana z Części 1, gdy użytkownik się zaloguje
+window.initApp = function() {
+    loadCustomSections(); // To od razu rysuje puste sekcje
     loadProducts();
     loadShoppingList();
 }
 
-// ==========================================
-// 5. OBSŁUGA LODÓWKI I PRODUKTÓW
-// ==========================================
+// --- RYSOWANIE POJEMNIKÓW W LODÓWCE ---
 const storageContainer = document.getElementById('storageSections');
 const storageLocationSelect = document.getElementById('storageLocation');
+const modal = document.getElementById('addProductModal');
 
-function renderEmptySections() {
+window.renderEmptySections = function() {
     storageContainer.innerHTML = '';
     storageLocationSelect.innerHTML = '';
     
-    defaultSections.forEach(section => {
+    // Rysowanie pojemników na podstawie tablicy storageSections (Część 1)
+    storageSections.forEach(section => {
         const div = document.createElement('div');
         div.className = 'storage-section';
         div.innerHTML = `
@@ -133,19 +205,17 @@ function renderEmptySections() {
     });
 }
 
-// Otwieranie/Zamykanie modala dodawania
-const modal = document.getElementById('addProductModal');
 document.getElementById('openModalBtn').addEventListener('click', () => modal.classList.add('active'));
 document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.remove('active'));
 
-// Zapis produktu do bazy
+// --- DODAWANIE PRODUKTU DO BAZY ---
 document.getElementById('saveProductBtn').addEventListener('click', async () => {
     if (!currentUser) return;
     const name = document.getElementById('productName').value;
     const date = document.getElementById('expiryDate').value;
     const location = document.getElementById('storageLocation').value;
 
-    if (!name || !date) return alert("Wpisz nazwę i datę!");
+    if (!name || !date) return alert("Wpisz nazwę i wybierz datę!");
     
     document.getElementById('saveProductBtn').innerText = "Zapisuję...";
     try {
@@ -154,17 +224,18 @@ document.getElementById('saveProductBtn').addEventListener('click', async () => 
         });
         modal.classList.remove('active');
         document.getElementById('productName').value = '';
-    } catch (e) { alert("Błąd!"); }
-    document.getElementById('saveProductBtn').innerText = "Zapisz";
+        document.getElementById('expiryDate').value = '';
+    } catch (e) { alert("Błąd zapisu!"); console.error(e); }
+    document.getElementById('saveProductBtn').innerText = "Zapisz produkt";
 });
 
-// Pobieranie i wyświetlanie produktów (NASŁUCHIWANIE NA ŻYWO)
-function loadProducts() {
+// --- POBIERANIE PRODUKTÓW (NA ŻYWO) ---
+window.loadProducts = function() {
     const q = query(collection(db, "products"), where("householdId", "==", currentHouseholdId));
     
     unsubscribeProducts = onSnapshot(q, (snapshot) => {
         // Czyszczenie list
-        defaultSections.forEach(sec => {
+        storageSections.forEach(sec => {
             const el = document.getElementById(sec.id);
             if(el) el.innerHTML = '';
         });
@@ -174,8 +245,7 @@ function loadProducts() {
         today.setHours(0,0,0,0);
 
         snapshot.forEach(docSnap => {
-            let p = { id: docSnap.id, ...docSnap.data() };
-            productsArray.push(p);
+            productsArray.push({ id: docSnap.id, ...docSnap.data() });
         });
         
         productsArray.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
@@ -205,27 +275,29 @@ function loadProducts() {
             }
         });
         
-        // Puste sekcje
-        defaultSections.forEach(sec => {
+        // Wyświetl "Pusto", jeśli sekcja nie ma produktów
+        storageSections.forEach(sec => {
             const el = document.getElementById(sec.id);
-            if(el && el.children.length === 0) el.innerHTML = '<p style="color: #aaa; font-size: 0.8em; text-align:center;">Pusto</p>';
+            if(el && el.children.length === 0) el.innerHTML = '<p style="color: #aaa; font-size: 0.85em; text-align:center; padding: 10px;">Pusto</p>';
         });
         
         checkRecipeSuggestions();
     });
 }
 
-// ==========================================
-// 6. USUWANIE, STATYSTYKI I "ZERO WASTE"
-// ==========================================
+// --- USUWANIE I STATYSTYKI ZERO WASTE ---
 let productToDeleteId = null;
 const consumeModal = document.getElementById('consumeModal');
 
-// Wystawienie funkcji globalnej dla przycisku HTML
 window.triggerDeleteModal = function(id) {
     productToDeleteId = id;
     consumeModal.classList.add('active');
 };
+
+document.getElementById('btnCancelConsume').addEventListener('click', () => {
+    consumeModal.classList.remove('active');
+    productToDeleteId = null;
+});
 
 document.getElementById('btnConsumed').addEventListener('click', () => resolveDeletion('saved'));
 document.getElementById('btnWasted').addEventListener('click', () => resolveDeletion('wasted'));
@@ -235,15 +307,14 @@ async function resolveDeletion(status) {
     consumeModal.classList.remove('active');
     
     try {
-        // Usuń produkt
-        await deleteDoc(doc(db, "products", productToDeleteId));
+        const prod = productsArray.find(p => p.id === productToDeleteId);
+        await deleteDoc(doc(db, "products", productToDeleteId)); // Usunięcie
         
-        // Zapisz statystykę w chmurze
-        const monthYear = new Date().toISOString().slice(0, 7); // np. "2024-03"
+        // Aktualizacja statystyk dla danego miesiąca
+        const monthYear = new Date().toISOString().slice(0, 7); 
         const statRef = doc(db, "stats", `${currentHouseholdId}_${monthYear}`);
-        
-        // Pobieramy stary dokument
         const statSnap = await getDoc(statRef);
+        
         let saved = statSnap.exists() ? statSnap.data().saved || 0 : 0;
         let wasted = statSnap.exists() ? statSnap.data().wasted || 0 : 0;
         
@@ -251,18 +322,17 @@ async function resolveDeletion(status) {
         
         await setDoc(statRef, { householdId: currentHouseholdId, month: monthYear, saved, wasted }, { merge: true });
         
-        // Jeśli wyrzucone, zapytaj o listę zakupów
-        if(status === 'wasted') {
-            if(confirm("Wyrzucono produkt. Dodać go od razu do listy zakupów?")) {
-                const prod = productsArray.find(p => p.id === productToDeleteId);
-                if(prod) addShoppingItem(prod.name);
+        // Pytanie o listę zakupów, jeśli produkt się zepsuł
+        if(status === 'wasted' && prod) {
+            if(confirm(`Wyrzuciłeś zepsuty produkt: ${prod.name}. Chcesz go od razu dodać do listy zakupów?`)) {
+                addShoppingItem(prod.name);
             }
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Błąd usuwania", e); }
     productToDeleteId = null;
 }
 
-function renderStats() {
+window.renderStats = function() {
     const monthYear = new Date().toISOString().slice(0, 7);
     const statRef = doc(db, "stats", `${currentHouseholdId}_${monthYear}`);
     
@@ -274,15 +344,16 @@ function renderStats() {
         document.getElementById('wastedCount').innerText = wasted;
 
         const ctx = document.getElementById('zeroWasteChart').getContext('2d');
-        if(chartInstance) chartInstance.destroy(); // Zniszcz stary wykres
+        if(chartInstance) chartInstance.destroy(); // Czyszczenie starego wykresu
         
         chartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Uratowane', 'Wyrzucone'],
                 datasets: [{
-                    data: [saved, wasted === 0 && saved === 0 ? 1 : wasted], // fake 1 żeby nie było pustego kółka
-                    backgroundColor: ['#2e7d32', '#e74c3c'],
+                    // Fake'owa jedynka, jeśli wszystko wynosi 0, żeby narysowało szare kółko
+                    data: [saved === 0 && wasted === 0 ? 1 : saved, wasted], 
+                    backgroundColor: [saved === 0 && wasted === 0 ? '#e0e0e0' : '#2e7d32', '#e74c3c'],
                 }]
             },
             options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
@@ -290,21 +361,22 @@ function renderStats() {
     });
 }
 
-// ==========================================
-// 7. LISTA ZAKUPÓW I SUGESTIE PRZEPISÓW
-// ==========================================
+// --- LISTA ZAKUPÓW ---
 document.getElementById('addShoppingItemBtn').addEventListener('click', () => {
-    const item = prompt("Co kupić?");
-    if(item) addShoppingItem(item);
+    const itemInput = document.getElementById('newShoppingItemInput');
+    const item = itemInput.value.trim();
+    if(item) {
+        addShoppingItem(item);
+        itemInput.value = '';
+    }
 });
 
-async function addShoppingItem(name) {
-    try {
-        await addDoc(collection(db, "shoppingList"), { name, householdId: currentHouseholdId, done: false });
-    } catch (e) { console.error(e); }
+window.addShoppingItem = async function(name) {
+    try { await addDoc(collection(db, "shoppingList"), { name, householdId: currentHouseholdId }); } 
+    catch (e) { console.error(e); }
 }
 
-function loadShoppingList() {
+window.loadShoppingList = function() {
     const q = query(collection(db, "shoppingList"), where("householdId", "==", currentHouseholdId));
     onSnapshot(q, (snapshot) => {
         const list = document.getElementById('shoppingList');
@@ -314,32 +386,42 @@ function loadShoppingList() {
             const li = document.createElement('li');
             li.innerHTML = `
                 <span>${data.name}</span>
-                <button class="btn danger-btn" onclick="deleteDoc(doc(db, 'shoppingList', '${docSnap.id}'))" style="padding: 4px 8px;"><i class="fa-solid fa-check"></i></button>
+                <button class="btn danger-btn" onclick="deleteShoppingItem('${docSnap.id}')" style="padding: 6px 10px;"><i class="fa-solid fa-check"></i></button>
             `;
             list.appendChild(li);
         });
     });
 }
 
-function checkRecipeSuggestions() {
-    // Prosta logika: jeśli mamy w produktach jajka i pomidory, sugeruj szakszukę
+window.deleteShoppingItem = async function(id) {
+    await deleteDoc(doc(db, "shoppingList", id));
+};
+
+// --- POMYSŁY NA PRZEPISY (Inteligentne sugestie) ---
+window.checkRecipeSuggestions = function() {
     const names = productsArray.map(p => p.name.toLowerCase());
     const hasEggs = names.some(n => n.includes('jajk'));
     const hasTomatoes = names.some(n => n.includes('pomidor'));
+    const hasMilk = names.some(n => n.includes('mleko'));
+    
+    const alertBox = document.getElementById('recipeSuggestionAlert');
+    const recipeText = document.getElementById('recipeText');
     
     if(hasEggs && hasTomatoes) {
-        document.getElementById('recipeSuggestionAlert').style.display = 'block';
+        alertBox.style.display = 'block';
+        recipeText.innerText = "Masz jajka i pomidory. Szybka szakszuka z patelni uchroni je przed zepsuciem!";
+    } else if(hasEggs && hasMilk) {
+        alertBox.style.display = 'block';
+        recipeText.innerText = "Masz jajka i mleko. Zrób pyszne naleśniki lub omlet!";
     } else {
-        document.getElementById('recipeSuggestionAlert').style.display = 'none';
+        alertBox.style.display = 'none';
     }
 }
 
-// ==========================================
-// 8. KALENDARZ FULLCALENDAR
-// ==========================================
-function renderCalendar() {
+// --- KALENDARZ (FullCalendar) ---
+window.renderCalendar = function() {
     const calendarEl = document.getElementById('calendarDiv');
-    calendarEl.innerHTML = ''; // czyszczenie
+    calendarEl.innerHTML = ''; 
     
     const events = productsArray.map(p => {
         return {
@@ -358,20 +440,18 @@ function renderCalendar() {
     calendar.render();
 }
 
-// ==========================================
-// 9. SKANER KODÓW KRESKOWYCH (Aparat)
-// ==========================================
+// --- SKANER KODÓW KRESKOWYCH (Aparat) ---
 const scanNavBtn = document.getElementById('scanNavBtn');
 const scannerModal = document.getElementById('scannerModal');
 let html5QrcodeScanner = null;
 
 scanNavBtn.addEventListener('click', () => {
-    if (!currentUser) return alert("Musisz być zalogowany!");
+    if (!currentUser) return alert("Musisz być zalogowany, aby skanować kody!");
     scannerModal.classList.add('active');
     
     html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 150} }, false);
     html5QrcodeScanner.render(async (decodedText) => {
-        // Po udanym skanowaniu
+        // Zamykamy skaner po zeskanowaniu
         html5QrcodeScanner.clear();
         scannerModal.classList.remove('active');
         
@@ -383,9 +463,10 @@ scanNavBtn.addEventListener('click', () => {
             if (data.status === 1 && data.product.product_name) {
                 document.getElementById('productName').value = data.product.product_name;
             } else {
-                alert("Nie znaleziono nazwy. Wpisz ją ręcznie.");
+                alert("Nie znaleziono kodu w bazie (Open Food Facts). Wpisz nazwę ręcznie.");
             }
         } catch (e) {
+            console.error(e);
             modal.classList.add('active');
         }
     });
@@ -395,9 +476,3 @@ document.getElementById('closeScannerBtn').addEventListener('click', () => {
     scannerModal.classList.remove('active');
     if (html5QrcodeScanner) html5QrcodeScanner.clear();
 });
-
-// Udostępnienie funkcji globalnej z modułu dla przycisków HTML
-window.deleteDoc = deleteDoc;
-window.doc = doc;
-window.db = db;
-
