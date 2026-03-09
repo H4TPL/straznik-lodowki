@@ -1,48 +1,97 @@
+/* --- Zmienne i Reset --- */
 :root {
     --primary: #2e7d32;
     --primary-light: #60ad5e;
     --danger: #e74c3c;
     --warning: #f39c12;
+    --info: #3498db;
     --bg-color: #f5f5f5;
     --text-color: #333;
     --card-bg: #ffffff;
     --border-color: #e0e0e0;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-
-body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 70px; }
-
-.navbar {
-    background-color: var(--primary); color: white; padding: 15px 20px;
-    display: flex; justify-content: space-between; align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100;
+* {
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
 }
 
-.logo { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding-bottom: 80px; /* Więcej miejsca na nowe dolne menu */
+}
 
+/* --- Nawigacja górna --- */
+.navbar {
+    background-color: var(--primary);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* --- Przyciski ogólne --- */
 .btn {
     padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;
-    font-weight: 500; background-color: white; color: var(--primary);
-    display: flex; align-items: center; gap: 5px; transition: 0.2s;
+    font-weight: 500; background-color: white; color: var(--text-color);
+    display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+    border: 1px solid var(--border-color);
 }
-
 .btn:hover { background-color: #f0f0f0; }
-.primary-btn { background-color: var(--primary); color: white; }
+
+.primary-btn { background-color: var(--primary); color: white; border: none; }
 .primary-btn:hover { background-color: var(--primary-light); }
 
-.app-container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+.danger-btn { background-color: var(--danger); color: white; border: none; }
+.danger-btn:hover { background-color: #c0392b; }
 
-.screen { display: none; animation: fadeIn 0.3s ease-in-out; }
+/* --- Układ ekranów --- */
+.app-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+.screen {
+    display: none; 
+    animation: fadeIn 0.3s ease-in-out;
+}
 .screen.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dashboard-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);
+}
+
+/* --- Sekcje w lodówce i ustawieniach --- */
 .storage-grid { display: grid; gap: 20px; }
 
 .storage-section {
-    background-color: var(--card-bg); border-radius: 10px; padding: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid var(--primary);
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-left: 5px solid var(--primary);
 }
 
 .storage-section h3 {
@@ -50,6 +99,7 @@ body { background-color: var(--bg-color); color: var(--text-color); padding-bott
     display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;
 }
 
+/* --- Produkty i listy --- */
 .product-list { min-height: 40px; display: flex; flex-direction: column; gap: 10px; }
 
 .product-item {
@@ -60,32 +110,81 @@ body { background-color: var(--bg-color); color: var(--text-color); padding-bott
 
 .product-info strong { display: block; margin-bottom: 3px; }
 .product-info span { font-size: 0.85rem; color: #666; }
+
+/* Kolory statusów */
 .product-item.expiring-soon { border-left: 5px solid var(--warning); }
 .product-item.expired { border-left: 5px solid var(--danger); }
+.product-item.safe { border-left: 5px solid var(--primary); }
 
-.delete-btn { background: none; color: var(--danger); border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; }
+.delete-btn {
+    background: none; color: var(--danger); border: none; font-size: 1.2rem; cursor: pointer; padding: 5px;
+}
 
+/* --- Lista zakupów (nowość) --- */
+#shoppingList li {
+    background: var(--card-bg); padding: 12px; margin-bottom: 8px;
+    border-radius: 5px; display: flex; justify-content: space-between;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* --- Okienka Modal --- */
 .modal-overlay {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;
 }
 .modal-overlay.active { display: flex; }
-.modal-box { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; }
+
+.modal-box {
+    background: var(--card-bg); padding: 25px; border-radius: 12px;
+    width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto;
+}
+
 .form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
-.form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+.form-group input, .form-group select {
+    width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 1rem;
+}
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-.bottom-nav {
-    position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--card-bg);
-    display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 90;
-}
-.nav-item { background: none; border: none; color: #888; display: flex; flex-direction: column; align-items: center; font-size: 0.8rem; width: 33%; cursor: pointer; }
-.nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
-.nav-item.active { color: var(--primary); font-weight: 500; }
+/* --- Kalendarz i Wykresy (Korekty) --- */
+#calendarDiv { min-height: 400px; }
+.fc-toolbar-title { font-size: 1.2em !important; }
+.fc-button { background-color: var(--primary) !important; border-color: var(--primary) !important; }
 
+/* --- PRZEWIJANE DOLNE MENU DLA TELEFONÓW (Swipe) --- */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    background-color: var(--card-bg);
+    display: flex;
+    padding: 10px 5px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 90;
+    
+    /* Magia przewijania (Scroll) */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+}
+.bottom-nav::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+
+.nav-item {
+    background: none; border: none; color: #888;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 0.75rem; cursor: pointer;
+    min-width: 75px; /* Szerokość każdego przycisku, żeby się nie zgniotły */
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    padding: 5px;
+}
+.nav-item i { font-size: 1.4rem; margin-bottom: 5px; }
+.nav-item.active { color: var(--primary); font-weight: 700; }
+
+/* --- RWD: Większe ekrany --- */
 @media (min-width: 768px) {
     .bottom-nav { display: none; }
     body { padding-bottom: 0; }
     .storage-grid { grid-template-columns: repeat(2, 1fr); }
+    /* Menu u góry zamiast na dole dla komputerów */
+    .user-menu { gap: 20px; }
 }
